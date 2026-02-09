@@ -185,13 +185,16 @@ export const App: React.FC = () => {
   const handleRename = (todo: Todo, newTitle: string) => {
     setTempTodos(prev => [...prev, todo.id]);
 
-    updateTodo({ ...todo, title: newTitle })
+    return updateTodo({ ...todo, title: newTitle })
       .then((updatedTodo: Todo) => {
         setTodos(currentTodos =>
           currentTodos.map(t => (t.id === todo.id ? updatedTodo : t)),
         );
       })
-      .catch(() => showError(ErrorMessages.Update))
+      .catch(e => {
+        showError(ErrorMessages.Update);
+        throw e;
+      })
       .finally(() => setTempTodos(prev => prev.filter(id => id !== todo.id)));
   };
 

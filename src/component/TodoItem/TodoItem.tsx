@@ -8,7 +8,7 @@ interface Props {
   isProcessing: boolean;
   onUpdate: (todo: Todo) => void;
   onDelete: (todoId: number) => void;
-  onRename: (todo: Todo, newTitle: string) => void;
+  onRename: (todo: Todo, newTitle: string) => Promise<void>;
 }
 
 export const TodoItem: React.FC<Props> = ({
@@ -21,15 +21,12 @@ export const TodoItem: React.FC<Props> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [newTitle, setNewTitle] = useState(todo.title);
 
-  // ✅ Правильна типізація ref
   const editInputRef = useRef<HTMLInputElement>(null);
 
-  // ✅ Синхронізація локального стейту з пропсами (якщо змінилось на сервері)
   useEffect(() => {
     setNewTitle(todo.title);
   }, [todo.title]);
 
-  // ✅ Примусовий фокус. autoFocus іноді не спрацьовує в тестах при ререндері
   useEffect(() => {
     if (isEditing && editInputRef.current) {
       editInputRef.current.focus();
@@ -37,37 +34,38 @@ export const TodoItem: React.FC<Props> = ({
   }, [isEditing]);
 
   const handleSubmit = () => {
-    // Захист від подвійного виклику (якщо Enter і Blur спрацювали одночасно)
     if (!isEditing) {
       return;
     }
 
     const trimmedTitle = newTitle.trim();
 
-    // Якщо нічого не змінилося
     if (trimmedTitle === todo.title) {
       setIsEditing(false);
+
       return;
     }
 
-    // Якщо пустий текст — видаляємо
     if (!trimmedTitle) {
       onDelete(todo.id);
+
       return;
     }
 
-    // Зберігаємо та закриваємо
-    onRename(todo, trimmedTitle);
-    setIsEditing(false);
+    onRename(todo, trimmedTitle)
+      .then(() => {
+        setIsEditing(false);
+      })
+      .catch(() => {
+        editInputRef.current?.focus();
+      });
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Escape') {
-      // Відміна редагування
-      setNewTitle(todo.title);
       setIsEditing(false);
+      setNewTitle(todo.title);
     } else if (event.key === 'Enter') {
-      // ✅ preventDefault важливий, щоб уникнути зайвих подій форми
       event.preventDefault();
       handleSubmit();
     }
@@ -92,9 +90,8 @@ export const TodoItem: React.FC<Props> = ({
 
       {isEditing ? (
         <form
-          onSubmit={(e) => {
+          onSubmit={e => {
             e.preventDefault();
-            // Submit обробляється через handleKeyDown або onBlur
           }}
         >
           <input
@@ -103,11 +100,12 @@ export const TodoItem: React.FC<Props> = ({
             className="todo__title-field"
             placeholder="Empty todo will be deleted"
             value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
+            onChange={e => setNewTitle(e.target.value)}
             onBlur={handleSubmit}
             onKeyDown={handleKeyDown}
             ref={editInputRef}
-            autoFocus // ✅ Допомагає браузеру зрозуміти намір одразу
+            autoFocus
+            disabled={isProcessing}
           />
         </form>
       ) : (
