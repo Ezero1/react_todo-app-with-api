@@ -61,6 +61,11 @@ export const TodoItem: React.FC<Props> = ({
       });
   };
 
+  const handleEdit = () => {
+    setIsEditing(true);
+    setNewTitle(todo.title);
+  };
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Escape') {
       setIsEditing(false);
@@ -89,11 +94,7 @@ export const TodoItem: React.FC<Props> = ({
       </label>
 
       {isEditing ? (
-        <form
-          onSubmit={e => {
-            e.preventDefault();
-          }}
-        >
+        <form onSubmit={e => e.preventDefault()}>
           <input
             data-cy="TodoTitleField"
             type="text"
@@ -112,10 +113,7 @@ export const TodoItem: React.FC<Props> = ({
         <span
           data-cy="TodoTitle"
           className="todo__title"
-          onDoubleClick={() => {
-            setIsEditing(true);
-            setNewTitle(todo.title);
-          }}
+          onDoubleClick={handleEdit}
         >
           {todo.title}
         </span>
